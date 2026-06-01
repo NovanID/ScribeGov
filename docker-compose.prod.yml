@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile.prod
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://api:8000/api/v1
+    restart: always
+    depends_on:
+      - api
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile.prod
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - DB_CONNECTION=sqlite
+      - DB_DATABASE=/var/www/html/database/database.sqlite
+      - QUEUE_CONNECTION=redis
+      - REDIS_HOST=redis
+    volumes:
+      - scribe_db:/var/www/html/database
+      - scribe_storage:/var/www/html/storage
+    restart: always
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - scribe_redis:/data
+    restart: always
+
+  queue:
+    build:
+      context: ./api
+      dockerfile: Dockerfile.prod
+    command: php artisan queue:work redis --sleep=3 --tries=3
+    environment:
+      - APP_ENV=production
+      - DB_CONNECTION=sqlite
+      - DB_DATABASE=/var/www/html/database/database.sqlite
+      - QUEUE_CONNECTION=redis
+      - REDIS_HOST=redis
+    volumes:
+      - scribe_db:/var/www/html/database
+      - scribe_storage:/var/www/html/storage
+    restart: always
+    depends_on:
+      - redis
+
+volumes:
+  scribe_db:
+  scribe_storage:
+  scribe_redis:

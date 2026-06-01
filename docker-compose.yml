@@ -1,0 +1,96 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: scribegov-db
+    environment:
+      POSTGRES_DB: scribegov
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: rootpassword
+    volumes:
+      - scribegov-pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - scribegov-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root -d scribegov"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: scribegov-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - scribegov-redisdata:/data
+    networks:
+      - scribegov-network
+
+  api:
+    build:
+      context: ./api
+      dockerfile: ../docker/php/Dockerfile
+    container_name: scribegov-api
+    restart: unless-stopped
+    volumes:
+      - ./api:/var/www/html
+    environment:
+      - DB_CONNECTION=pgsql
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_DATABASE=scribegov
+      - DB_USERNAME=root
+      - DB_PASSWORD=rootpassword
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=null
+      - REDIS_PORT=6379
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - scribegov-network
+
+  web:
+    build:
+      context: ./web
+      dockerfile: ../docker/node/Dockerfile
+    container_name: scribegov-web
+    restart: unless-stopped
+    volumes:
+      - ./web:/app
+      - /app/node_modules
+      - /app/.next
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost/api/v1
+    networks:
+      - scribegov-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: scribegov-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d
+      - ./api:/var/www/html
+    depends_on:
+      - api
+      - web
+    networks:
+      - scribegov-network
+
+networks:
+  scribegov-network:
+    driver: bridge
+
+volumes:
+  scribegov-pgdata:
+  scribegov-redisdata:

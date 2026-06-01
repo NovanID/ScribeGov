@@ -1,0 +1,164 @@
+openapi: 3.0.3
+info:
+  title: ScribeGov API
+  description: Modern API-first government e-office platform for disposition routing and correspondence.
+  version: 1.0.0
+servers:
+  - url: http://localhost/api/v1
+    description: Local development server
+paths:
+  /auth/login:
+    post:
+      summary: Authenticate user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Successful authentication
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+  /letters:
+    get:
+      summary: List inbox letters
+      responses:
+        '200':
+          description: A paginated list of letters
+    post:
+      summary: Register a new letter
+      responses:
+        '201':
+          description: Letter created successfully
+  /letters/{id}:
+    get:
+      summary: Get letter detail and metadata
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Letter details
+  /letters/{id}/file:
+    get:
+      summary: Get signed URL for PDF access
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Signed URL returned
+  /letters/{id}/dispositions:
+    post:
+      summary: Create a new disposition
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                to_user_id:
+                  type: integer
+                note:
+                  type: string
+      responses:
+        '201':
+          description: Disposition created
+  /letters/{id}/timeline:
+    get:
+      summary: Get full disposition timeline
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Timeline events
+  /letters/{id}/sign:
+    post:
+      summary: Submit TTE signature request to BSrE
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Document signed
+  /letters/batch-sign:
+    post:
+      summary: Batch TTE signature for multiple letters
+      responses:
+        '200':
+          description: Documents signed
+  /routing/suggest:
+    post:
+      summary: Get Dijkstra-based routing suggestion
+      responses:
+        '200':
+          description: Suggested route path
+  /ocr/extract:
+    post:
+      summary: Submit image for OCR field extraction
+      responses:
+        '200':
+          description: Extracted fields and confidence scores
+  /users:
+    get:
+      summary: List users
+      responses:
+        '200':
+          description: Users list
+    post:
+      summary: Create user
+      responses:
+        '201':
+          description: User created
+  /organizations:
+    get:
+      summary: List organizational units
+      responses:
+        '200':
+          description: Org units tree
+    post:
+      summary: Create organizational unit
+      responses:
+        '201':
+          description: Org unit created
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+security:
+  - bearerAuth: []

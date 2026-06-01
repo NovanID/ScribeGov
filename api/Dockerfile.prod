@@ -1,0 +1,36 @@
+FROM php:8.3-fpm-alpine
+
+# Install extensions
+RUN apk add --no-cache \
+    git \
+    zip \
+    unzip \
+    libzip-dev \
+    sqlite-dev \
+    linux-headers \
+    $PHPIZE_DEPS \
+    && docker-php-ext-install pdo_sqlite zip pcntl \
+    && pecl install redis \
+    && docker-php-ext-enable redis
+
+# Install composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Set working directory
+WORKDIR /var/www/html
+
+# Copy project files
+COPY . .
+
+# Install PHP dependencies
+RUN composer install --optimize-autoloader --no-dev
+
+# Setup permissions
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+
+# Create SQLite DB if not exists
+RUN touch database/database.sqlite && \
+    chown www-data:www-data database/database.sqlite
+
+# Start command
+CMD php artisan serve --host=0.0.0.0 --port=8000
