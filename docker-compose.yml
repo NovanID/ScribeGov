@@ -69,7 +69,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost/api/v1
+      - NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
     networks:
       - scribegov-network
 
@@ -77,13 +77,22 @@ services:
     image: nginx:alpine
     container_name: scribegov-nginx
     ports:
-      - "80:80"
+      - "8000:80"
     volumes:
       - ./docker/nginx/conf.d:/etc/nginx/conf.d
       - ./api:/var/www/html
     depends_on:
       - api
       - web
+    networks:
+      - scribegov-network
+
+  adminer:
+    image: adminer:latest
+    container_name: scribegov-adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
     networks:
       - scribegov-network
 

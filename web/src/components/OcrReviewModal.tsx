@@ -69,10 +69,6 @@ export default function OcrReviewModal({ isOpen, onClose, initialData, confidenc
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div className="bg-[#0D1929] border border-[#1E3A5F] p-4 rounded-xl text-sm text-[#8DA4BF] mb-4">
-            Silakan tinjau data yang diekstrak. Kolom berwarna <span className="text-amber-500 font-bold">kuning</span> memiliki tingkat kepercayaan rendah dan memerlukan verifikasi manual Anda.
-          </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-[#F0F4F8] mb-1">

@@ -17,6 +17,7 @@ interface Letter {
   urgency_level: string;
   status: string;
   file_url?: string;
+  download_url?: string;
   created_at: string;
 }
 
@@ -26,6 +27,13 @@ export default function LetterDetailPage({ params }: { params: { id: string } })
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
+  const [formattedDate, setFormattedDate] = useState("");
+
+  useEffect(() => {
+    if (letter?.date) {
+      setFormattedDate(new Date(letter.date).toLocaleDateString('id-ID'));
+    }
+  }, [letter]);
 
   useEffect(() => {
     fetchLetter();
@@ -34,14 +42,9 @@ export default function LetterDetailPage({ params }: { params: { id: string } })
   const fetchLetter = async () => {
     try {
       setIsLoading(true);
-      // Fallback data
-      if (params.id === '1') {
-        setLetter({ id: 1, number: '001/A/2026', date: '2026-05-14', subject: 'Undangan Rapat Koordinasi Nasional Kementerian PAN-RB', sender: 'Kementerian PAN-RB', urgency_level: 'Urgent', status: 'Diterima', created_at: '2026-05-14T08:00:00.000000Z', file_url: '' });
-      } else {
-        const res = await api.get(`/letters/${params.id}`);
-        if (res.data && res.data.data) {
-          setLetter(res.data.data);
-        }
+      const res = await api.get(`/letters/${params.id}`);
+      if (res.data && res.data.data) {
+        setLetter(res.data.data);
       }
     } catch (err) {
       console.error(err);
@@ -77,10 +80,30 @@ export default function LetterDetailPage({ params }: { params: { id: string } })
           </Link>
           <h2 className="text-2xl md:text-3xl font-bold line-clamp-1">{letter.subject}</h2>
         </div>
-        <div className="hidden md:block">
-          <span className={`px-3 py-1.5 text-sm font-semibold rounded-full shadow-sm ${getUrgencyColor(letter.urgency_level)}`}>
-            {letter.urgency_level}
-          </span>
+        <div className="flex items-center gap-3">
+          <div className="hidden md:block">
+            <span className={`px-3 py-1.5 text-sm font-semibold rounded-full shadow-sm ${getUrgencyColor(letter.urgency_level)}`}>
+              {letter.urgency_level}
+            </span>
+          </div>
+          <button
+            onClick={async () => {
+              if (!confirm('Apakah Anda yakin ingin menghapus surat ini?')) return;
+              try {
+                await api.delete(`/letters/${letter.id}`);
+                router.push('/inbox');
+              } catch (err) {
+                console.error('Failed to delete letter:', err);
+                alert('Gagal menghapus surat.');
+              }
+            }}
+            className="px-4 py-2 bg-[#BF092F]/10 text-[#BF092F] hover:bg-[#BF092F] hover:text-white font-medium rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 border border-[#BF092F]/20"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            <span className="hidden md:inline">Hapus Surat</span>
+          </button>
         </div>
       </div>
 
@@ -96,7 +119,7 @@ export default function LetterDetailPage({ params }: { params: { id: string } })
           </div>
           <div>
             <p className="text-xs text-[#8DA4BF] mb-1">Tanggal Surat</p>
-            <p className="font-medium text-[#F0F4F8]">{new Date(letter.date).toLocaleDateString('id-ID')}</p>
+            <p className="font-medium text-[#F0F4F8]">{formattedDate}</p>
           </div>
           <div>
             <p className="text-xs text-[#8DA4BF] mb-1">Status</p>
@@ -108,7 +131,7 @@ export default function LetterDetailPage({ params }: { params: { id: string } })
       <div className="flex-1 bg-[#0D1929] rounded-2xl border border-[#1E3A5F] overflow-hidden flex flex-col relative shadow-inner">
         <div className="p-3 bg-[#1E3A5F] flex justify-between items-center border-b border-[#132440]">
           <span className="text-sm font-medium text-[#F0F4F8]">Dokumen PDF</span>
-          <a href={letter.file_url || '#'} target="_blank" rel="noreferrer" className="text-xs text-[#3B9797] hover:text-[#F0F4F8] transition-colors flex items-center gap-1">
+          <a href={letter.download_url || '#'} target="_blank" rel="noreferrer" className="text-xs text-[#3B9797] hover:text-[#F0F4F8] transition-colors flex items-center gap-1">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>

@@ -33,6 +33,11 @@ export default function InboxPage() {
   const [ocrData, setOcrData] = useState<any>(null);
   const [ocrConfidence, setOcrConfidence] = useState<any>(null);
 
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   useEffect(() => {
     fetchInbox();
   }, []);
@@ -82,6 +87,17 @@ export default function InboxPage() {
     }
   };
 
+  const handleDeleteLetter = async (id: number) => {
+    if (!confirm('Apakah Anda yakin ingin menghapus surat ini?')) return;
+    try {
+      await api.delete(`/letters/${id}`);
+      fetchInbox();
+    } catch (err) {
+      console.error('Failed to delete letter:', err);
+      alert('Gagal menghapus surat.');
+    }
+  };
+
   const signableCount = filteredLetters.filter(l => l.status !== 'Signed').length;
 
   return (
@@ -118,17 +134,37 @@ export default function InboxPage() {
         <div className="bg-[#1E3A5F] border border-[#3B9797]/50 rounded-xl p-4 flex items-center justify-between shadow-lg mb-4 animate-in fade-in slide-in-from-top-2">
           <p className="text-[#F0F4F8] font-medium">
             <span className="bg-[#3B9797] text-white px-2 py-0.5 rounded-md mr-2">{selectedLetters.length}</span>
-            Surat terpilih untuk TTE Massal
+            Surat terpilih
           </p>
-          <button
-            onClick={() => setIsBatchSignModalOpen(true)}
-            className="px-5 py-2 bg-[#3B9797] hover:bg-[#2F7A7A] text-white font-medium rounded-lg transition-colors flex items-center gap-2"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-            </svg>
-            TTE Massal
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={async () => {
+                if (!confirm(`Apakah Anda yakin ingin menghapus ${selectedLetters.length} surat ini?`)) return;
+                try {
+                  await Promise.all(selectedLetters.map(id => api.delete(`/letters/${id}`)));
+                  fetchInbox();
+                } catch (err) {
+                  console.error('Failed to delete letters:', err);
+                  alert('Gagal menghapus beberapa surat.');
+                }
+              }}
+              className="px-5 py-2 bg-[#BF092F]/10 hover:bg-[#BF092F] text-[#BF092F] hover:text-white font-medium rounded-lg transition-colors flex items-center gap-2 border border-[#BF092F]/20"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Hapus Massal
+            </button>
+            <button
+              onClick={() => setIsBatchSignModalOpen(true)}
+              className="px-5 py-2 bg-[#3B9797] hover:bg-[#2F7A7A] text-white font-medium rounded-lg transition-colors flex items-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              TTE Massal
+            </button>
+          </div>
         </div>
       )}
 
@@ -170,7 +206,7 @@ export default function InboxPage() {
                       <p className="text-sm font-medium text-[#F0F4F8] line-clamp-1">{letter.subject}</p>
                     </div>
                     <div className="ml-4 flex-shrink-0 flex items-center gap-2">
-                      <p className="text-sm text-[#8DA4BF]">{new Date(letter.date).toLocaleDateString('id-ID')}</p>
+                      <p suppressHydrationWarning className="text-sm text-[#8DA4BF]">{isMounted ? new Date(letter.date).toLocaleDateString('id-ID') : ''}</p>
                       <svg className="w-5 h-5 text-[#8DA4BF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
@@ -187,6 +223,22 @@ export default function InboxPage() {
                     </div>
                   </div>
                   </Link>
+                  <div className="pr-4 sm:pr-6 flex-shrink-0">
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleDeleteLetter(letter.id);
+                      }}
+                      className="px-4 py-2 bg-[#BF092F] text-white hover:bg-[#8A0621] rounded-lg transition-colors flex items-center gap-2 text-sm font-bold shadow-md z-10 relative"
+                      title="Hapus Surat"
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      Hapus
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>

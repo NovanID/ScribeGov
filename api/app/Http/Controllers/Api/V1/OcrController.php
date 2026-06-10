@@ -21,7 +21,7 @@ class OcrController extends Controller
     public function scan(Request $request)
     {
         $request->validate([
-            'image' => 'required|image|mimes:jpeg,png,jpg|max:5120',
+            'image' => 'required|file|mimes:jpeg,png,jpg,pdf,doc,docx|max:5120',
         ]);
 
         try {

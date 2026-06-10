@@ -15,15 +15,35 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
         $this->call([
             RoleSeeder::class,
+            OrganizationSeeder::class,
         ]);
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        $admin = User::firstOrCreate(
+            ['email' => 'test@example.com'],
+            [
+                'name' => 'Test User',
+                'password' => \Illuminate\Support\Facades\Hash::make('password'),
+            ]
+        );
+
+        // Assign roles
+        $admin->assignRole('Admin');
+
+        $direktur = User::where('email', 'direktur@example.com')->first();
+        if ($direktur) {
+            $direktur->assignRole('Pimpinan');
+        }
+
+        $kasubdit = User::where('email', 'kasubdit@example.com')->first();
+        if ($kasubdit) {
+            $kasubdit->assignRole('Staf TU');
+        }
+
+        $staf = User::where('email', 'stafbudi@example.com')->first();
+        if ($staf) {
+            $staf->assignRole('Staf Pelaksana');
+        }
     }
 }

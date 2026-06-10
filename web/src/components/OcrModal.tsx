@@ -43,7 +43,7 @@ export default function OcrModal({ isOpen, onClose, onSuccess }: OcrModalProps) 
       }
     } catch (err) {
       console.error('OCR Scan failed:', err);
-      toast.error('Gagal memproses gambar. Pastikan gambar jelas dan berformat JPG/PNG.');
+      toast.error('Gagal memproses file. Pastikan dokumen jelas dan berformat sesuai.');
     } finally {
       setIsScanning(false);
     }
@@ -84,12 +84,22 @@ export default function OcrModal({ isOpen, onClose, onSuccess }: OcrModalProps) 
               <svg className="w-12 h-12 text-[#8DA4BF] group-hover:text-[#3B9797] transition-colors mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
               </svg>
-              <p className="text-sm font-medium text-[#F0F4F8]">Klik atau Seret Gambar Surat</p>
-              <p className="text-xs text-[#8DA4BF] mt-1">Mendukung JPG, PNG (Max 5MB)</p>
+              <p className="text-sm font-medium text-[#F0F4F8]">Klik atau Seret File Dokumen</p>
+              <p className="text-xs text-[#8DA4BF] mt-1">Mendukung JPG, PNG, PDF, Word (Max 5MB)</p>
             </div>
           ) : (
-            <div className="relative rounded-xl overflow-hidden bg-[#0D1929] border border-[#1E3A5F] flex items-center justify-center h-64">
-              <img src={preview} alt="Surat Preview" className="max-h-full max-w-full object-contain" />
+            <div className="relative rounded-xl overflow-hidden bg-[#0D1929] border border-[#1E3A5F] flex flex-col items-center justify-center h-64 p-4 text-center">
+              {file?.type.startsWith('image/') ? (
+                <img src={preview} alt="Surat Preview" className="max-h-full max-w-full object-contain" />
+              ) : (
+                <div className="flex flex-col items-center text-[#8DA4BF]">
+                  <svg className="w-16 h-16 mb-4 text-[#3B9797]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                  <p className="font-medium text-[#F0F4F8]">{file?.name}</p>
+                  <p className="text-xs mt-1">{file ? (file.size / 1024 / 1024).toFixed(2) : '0'} MB</p>
+                </div>
+              )}
               {!isScanning && (
                 <button 
                   onClick={() => { setFile(null); setPreview(null); }}
@@ -107,7 +117,7 @@ export default function OcrModal({ isOpen, onClose, onSuccess }: OcrModalProps) 
             type="file" 
             ref={fileInputRef} 
             onChange={handleFileChange} 
-            accept="image/jpeg,image/png" 
+            accept="image/jpeg,image/png,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" 
             className="hidden" 
           />
 

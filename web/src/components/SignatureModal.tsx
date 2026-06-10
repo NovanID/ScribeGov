@@ -59,7 +59,7 @@ export default function SignatureModal({ isOpen, onClose, letterId, letterIds, o
             <svg className="w-5 h-5 text-[#3B9797]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
             </svg>
-            Tanda Tangan Elektronik
+            <span>Tanda Tangan Elektronik</span>
           </h3>
           <button onClick={onClose} className="text-[#8DA4BF] hover:text-white transition-colors">
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -70,11 +70,11 @@ export default function SignatureModal({ isOpen, onClose, letterId, letterIds, o
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
           <div className="text-center text-sm text-[#8DA4BF] mb-4">
-            Masukkan Passphrase BSrE Anda untuk menandatangani {letterIds ? `massal ${letterIds.length} dokumen` : 'dokumen ini'}. Dokumen akan disertifikasi secara elektronik.
+            <span>Masukkan Passphrase BSrE Anda untuk menandatangani {letterIds ? `massal ${letterIds.length} dokumen` : 'dokumen ini'}. Dokumen akan disertifikasi secara elektronik.</span>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-[#F0F4F8] mb-2">Passphrase TTE</label>
+            <label className="block text-sm font-medium text-[#F0F4F8] mb-2"><span>Passphrase TTE</span></label>
             <input 
               type="password"
               value={passphrase}
@@ -91,24 +91,18 @@ export default function SignatureModal({ isOpen, onClose, letterId, letterIds, o
               onClick={onClose}
               className="px-5 py-2.5 rounded-xl text-[#F0F4F8] bg-transparent hover:bg-[#1E3A5F] transition-colors"
             >
-              Batal
+              <span>Batal</span>
             </button>
             <button 
               type="submit" 
               disabled={isLoading || !passphrase}
               className="px-5 py-2.5 rounded-xl bg-[#3B9797] text-white font-medium hover:bg-[#2F7A7A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
-              {isLoading ? (
-                <>
-                  <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Menghubungi BSrE...
-                </>
-              ) : (
-                'Tandatangani Dokumen'
-              )}
+              <svg className={`animate-spin h-4 w-4 text-white ${isLoading ? 'block' : 'hidden'}`} fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span>{isLoading ? 'Menghubungi BSrE...' : 'Tandatangani Dokumen'}</span>
             </button>
           </div>
         </form>

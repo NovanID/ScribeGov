@@ -1,7 +1,17 @@
 import withPWAInit from '@ducanh2912/next-pwa';
 
 /** @type {import('next').NextConfig} */
-const nextConfig = {};
+const nextConfig = {
+  async redirects() {
+    return [
+      {
+        source: '/',
+        destination: '/login',
+        permanent: false,
+      },
+    ];
+  },
+};
 
 const withPWA = withPWAInit({
   dest: 'public',

@@ -30,24 +30,38 @@ class DispositionController extends Controller
     {
         $request->validate([
             'letter_id' => 'required|exists:letters,id',
-            'to_user_id' => 'required|exists:users,id',
+            'to_user_ids' => 'required|array|min:1',
+            'to_user_ids.*' => 'exists:users,id',
             'note' => 'nullable|string|max:500',
+            'priority' => 'nullable|string|in:Biasa,Penting,Segera',
+            'due_date' => 'nullable|date',
         ]);
 
         $letter = Letter::findOrFail($request->letter_id);
         $fromUser = Auth::user();
-        $toUser = User::findOrFail($request->to_user_id);
 
         DB::beginTransaction();
         try {
-            // Create disposition
-            $disposition = Disposition::create([
-                'letter_id' => $letter->id,
-                'from_user_id' => $fromUser->id,
-                'to_user_id' => $toUser->id,
-                'note' => $request->note,
-                'status' => 'pending',
-            ]);
+            $dispositions = [];
+            
+            foreach ($request->to_user_ids as $toUserId) {
+                $toUser = User::findOrFail($toUserId);
+                
+                // Create disposition
+                $disposition = Disposition::create([
+                    'letter_id' => $letter->id,
+                    'from_user_id' => $fromUser->id,
+                    'to_user_id' => $toUser->id,
+                    'note' => $request->note,
+                    'priority' => $request->priority ?? 'Biasa',
+                    'due_date' => $request->due_date,
+                    'status' => 'pending',
+                ]);
+                $dispositions[] = $disposition;
+
+                // Dispatch placeholder notification job
+                $this->notificationService->sendDispositionNotification($disposition);
+            }
 
             // Update letter status
             $letter->status = 'Didisposisi';
@@ -59,24 +73,44 @@ class DispositionController extends Controller
                 'user_id' => $fromUser->id,
                 'action' => 'disposition_created',
                 'metadata' => [
-                    'description' => "Disposisi surat ke {$toUser->name} dengan catatan: {$request->note}",
+                    'description' => "Disposisi surat ke " . count($request->to_user_ids) . " penerima dengan catatan: {$request->note}",
                     'ip_address' => $request->ip(),
                 ]
             ]);
-
-            // Dispatch placeholder notification job
-            $this->notificationService->sendDispositionNotification($disposition);
 
             DB::commit();
 
             return response()->json([
                 'message' => 'Disposisi berhasil dikirim',
-                'data' => $disposition
+                'data' => $dispositions
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['message' => 'Gagal membuat disposisi', 'error' => $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Get all users grouped by organization for manual selection.
+     */
+    public function getUsersGroupedByOrg()
+    {
+        $users = User::with('organization')->get();
+        $grouped = [];
+
+        foreach ($users as $user) {
+            $orgName = $user->organization ? $user->organization->name : 'Lainnya';
+            if (!isset($grouped[$orgName])) {
+                $grouped[$orgName] = [];
+            }
+            $grouped[$orgName][] = [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+            ];
+        }
+
+        return response()->json(['data' => $grouped]);
     }
 
     /**
@@ -126,6 +160,12 @@ class DispositionController extends Controller
             ->orderBy('created_at', 'asc')
             ->get();
 
+        $auditLogs = \App\Models\AuditLog::with('user.organization')
+            ->where('letter_id', $letterId)
+            ->where('action', 'letter_signed')
+            ->orderBy('created_at', 'asc')
+            ->get();
+
         $letter = Letter::findOrFail($letterId);
 
         $timeline = [];
@@ -149,8 +189,25 @@ class DispositionController extends Controller
                 'note' => $disp->note,
                 'timestamp' => $disp->created_at,
                 'status' => $disp->status,
+                'priority' => $disp->priority,
+                'due_date' => $disp->due_date,
             ];
         }
+
+        foreach ($auditLogs as $log) {
+            $timeline[] = [
+                'type' => 'signed',
+                'actor' => $log->user->name ?? 'Sistem',
+                'role' => ($log->user && $log->user->organization) ? $log->user->organization->name : 'Staff',
+                'action' => 'Menandatangani dokumen elektronik',
+                'note' => isset($log->metadata['description']) ? $log->metadata['description'] : 'Dokumen bersertifikat elektronik.',
+                'timestamp' => $log->created_at,
+            ];
+        }
+
+        usort($timeline, function($a, $b) {
+            return strtotime($a['timestamp']) - strtotime($b['timestamp']);
+        });
 
         return response()->json(['data' => $timeline]);
     }
